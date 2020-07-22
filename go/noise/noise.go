@@ -57,6 +57,16 @@ func ToKind(n Noise) Kind {
 	return GaussianNoise
 }
 
+// ConfidenceIntervalFloat64 defines a struct to hold float64 bounds for the confidence interval.
+type ConfidenceIntervalFloat64 struct {
+	LowerBound, UpperBound float64
+}
+
+// ConfidenceIntervalInt64 defines a struct to hold int64 bounds for the confidence interval.
+type ConfidenceIntervalInt64 struct {
+	LowerBound, UpperBound int64
+}
+
 // Noise is an interface for primitives that add noise to data to make it differentially private.
 type Noise interface {
 	// AddNoiseInt64 noise to the specified int64 x so that the output is ε-differentially
@@ -100,4 +110,14 @@ type Noise interface {
 	// satisfies (epsilon,deltaNoise+deltaThreshold)-differential privacy under the
 	// given assumptions of L_0 and L_∞ sensitivities.
 	Threshold(l0Sensitivity int64, lInfSensitivity, epsilon, deltaNoise, deltaThreshold float64) float64
+
+	// ReturnConfidenceIntervalFloat64 returns a confidence interval for the true value using float64 noisedValue argument
+	// with confidence level supplied given L_0 and L_∞ sensitivities, epsilon and delta parameters for the distribution
+	ReturnConfidenceIntervalFloat64(noisedValue float64, l0sensitivity int64, lInfSensitivity, epsilon, delta,
+		confidenceLevel float64) (*ConfidenceIntervalFloat64, error)
+
+	// ReturnConfidenceIntervalInt64 returns a confidence interval for the true value using int64 noisedValue argument
+	// with confidence level supplied given L_0 and L_∞ sensitivities, epsilon and delta parameters for the distribution
+	ReturnConfidenceIntervalInt64(noisedValue, l0sensitivity, lInfSensitivity int64, epsilon, delta,
+		confidenceLevel float64) (*ConfidenceIntervalInt64, error)
 }

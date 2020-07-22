@@ -23,6 +23,13 @@ import (
 	"github.com/grd/stat"
 )
 
+func approxEqual(a, b float64) bool {
+	maxMagnitude := math.Max(math.Abs(a), math.Abs(b))
+	if math.IsInf(maxMagnitude, +1) {
+		return a == b
+	}
+	return math.Abs(a-b) <= 1e-6*maxMagnitude
+}
 func TestLaplaceStatistics(t *testing.T) {
 	const numberOfSamples = 125000
 	for _, tc := range []struct {
@@ -172,7 +179,288 @@ func TestDeltaForThresholdLaplace(t *testing.T) {
 		}
 	}
 }
+func TestInverseCDFLaplace(t *testing.T) {
+	for _, tc := range []struct {
+		desc                     string
+		mean, lambda, prob, want float64
+	}{
+		// 2 high-precision calculated random tests.
+		{
+			desc:   "High-precision random test",
+			mean:   64,
+			lambda: 4,
+			prob:   0.7875404240919761168041,
+			want:   67.4234254367},
+		{
+			desc:   "High-precision random test",
+			mean:   23,
+			lambda: 2,
+			prob:   0.1479685611330654517049,
+			want:   20.564783456,
+		},
+		// Edge cases where p = 0 or p = 1.(Output should be infinite)
+		{
+			desc:   "Negative infinity output when probablity is 0",
+			mean:   0,
+			lambda: 1,
+			prob:   0,
+			want:   math.Inf(-1),
+		},
+		{
+			desc:   "Positive infinity output when probablity is 1",
+			mean:   1,
+			lambda: 1,
+			prob:   1,
+			want:   math.Inf(1),
+		},
+		// Logical testing (with p = 0.5, return value should be mean regardless of lambda)
+		{
+			desc:   "%50 confidence level, different lambda",
+			mean:   5,
+			lambda: 5,
+			prob:   0.5,
+			want:   5,
+		},
+		{
+			desc:   "%50 confidence level, different lambda",
+			mean:   5,
+			lambda: 10,
+			prob:   0.5,
+			want:   5,
+		},
+		// Edge cases where probablity is low or high. (Tests for accuracy)
+		{
+			desc:   "Low probablity",
+			mean:   0,
+			lambda: 3,
+			prob:   2.88887425971E-8,
+			want:   -50,
+		},
+		{
+			desc:   "High probablitiy",
+			mean:   0,
+			lambda: 3,
+			prob:   0.999999971111257,
+			want:   50,
+		},
+	} {
+		got := inverseCDFLaplace(tc.mean, tc.lambda, tc.prob)
+		if !approxEqual(got, tc.want) {
+			t.Errorf("TestInverseCDFLaplace(%f,%f,%f)=%0.12f, want %0.12f, desc: %s", tc.mean, tc.lambda,
+				tc.prob, got, tc.want, tc.desc)
+		}
+	}
 
+}
+
+func TestConfidenceIntervalLaplace(t *testing.T) {
+	// Tests for getConfidenceIntervalLaplace function
+	for _, tc := range []struct {
+		desc                    string
+		noisedValue             float64
+		lambda, confidenceLevel float64
+		want                    ConfidenceIntervalFloat64
+		wantErr                 bool
+	}{
+		// 4 Random pre-calculated tests.
+		{
+			desc:            "Random test",
+			noisedValue:     13,
+			lambda:          27.33333333333,
+			confidenceLevel: 0.95,
+			want:            ConfidenceIntervalFloat64{-68.88334881, 94.88334881},
+		},
+		{
+			desc:            "Random test",
+			noisedValue:     83.1235,
+			lambda:          60,
+			confidenceLevel: 0.76,
+			want:            ConfidenceIntervalFloat64{-2.503481338, 168.7504813},
+		},
+		{
+			desc:            "Random test",
+			noisedValue:     5,
+			lambda:          6.6666666666667,
+			confidenceLevel: 0.4,
+			want:            ConfidenceIntervalFloat64{1.594495842, 8.405504158},
+		},
+		{
+			desc:            "Random test",
+			noisedValue:     65.4621,
+			lambda:          700,
+			confidenceLevel: 0.2,
+			want:            ConfidenceIntervalFloat64{-90.73838592, 221.6625859},
+		},
+		// Confidence interval with confidence level of 0 and 1 and Lambda is 10.
+		{
+			desc:            "Exact point interval, 0 confidence level",
+			noisedValue:     0,
+			lambda:          10,
+			confidenceLevel: 0, // Zero confidence level means confidence interval is an exact point that equals the mean.
+			want:            ConfidenceIntervalFloat64{0, 0},
+		},
+		{
+			desc:            "Infinite interval, 1 confidence level",
+			noisedValue:     0,
+			lambda:          10,
+			confidenceLevel: 1, // Probablity of one makes the interval infinite in both directions.
+			want:            ConfidenceIntervalFloat64{math.Inf(-1), math.Inf(1)},
+		},
+		// Near 0 and 1 confidence levels.
+		{
+			desc:            "Low confidence level",
+			noisedValue:     50,
+			lambda:          10,
+			confidenceLevel: 0.01,
+			want:            ConfidenceIntervalFloat64{49.89949664, 50.1005033595},
+		},
+		{
+			desc:            "High confidence level",
+			noisedValue:     50,
+			lambda:          10,
+			confidenceLevel: 0.99,
+			want:            ConfidenceIntervalFloat64{3.94829814, 96.05170186},
+		},
+	} {
+		got := getConfidenceIntervalLaplace(tc.noisedValue, tc.lambda, tc.confidenceLevel)
+		if !approxEqual(got.LowerBound, tc.want.LowerBound) {
+			t.Errorf("TestConfidenceIntervalLaplace(%f, %f, %f)=%0.10f, want %0.10f, desc %s, LowerBound is not equal",
+				tc.noisedValue, tc.lambda, tc.confidenceLevel,
+				got.LowerBound, tc.want.LowerBound, tc.desc)
+		}
+		if !approxEqual(got.UpperBound, tc.want.UpperBound) {
+			t.Errorf("TestConfidenceIntervalLaplace(%f, %f, %f)=%0.10f, want %0.10f, desc %s, UpperBound is not equal",
+				tc.noisedValue, tc.lambda, tc.confidenceLevel,
+				got.UpperBound, tc.want.UpperBound, tc.desc)
+		}
+	}
+
+}
+
+func TestReturnConfidenceIntervalFloat64(t *testing.T) {
+	for _, tc := range []struct {
+		desc                                      string
+		noisedValue                               float64
+		l0Sensitivity                             int64
+		lInfSensitivity, epsilon, confidenceLevel float64
+		want                                      ConfidenceIntervalFloat64
+	}{
+		{
+			desc:            "Random test",
+			noisedValue:     83.1235,
+			l0Sensitivity:   3,
+			lInfSensitivity: 2,
+			epsilon:         0.1,
+			confidenceLevel: 0.76,
+			want:            ConfidenceIntervalFloat64{-2.503481338, 168.7504813},
+		},
+	} {
+		got, err := lap.ReturnConfidenceIntervalFloat64(tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity,
+			tc.epsilon, 0, tc.confidenceLevel)
+		if err != nil {
+			t.Errorf("ReturnConfidenceIntervalFloat64: when %s for err got %v", tc.desc, err)
+		}
+		if !approxEqual(got.LowerBound, tc.want.LowerBound) {
+			t.Errorf("TestReturnConfidenceIntervalFloat64(%f, %d, %f, %f, %f)=%0.10f, want %0.10f, desc %s, LowerBound is not equal",
+				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
+				got.UpperBound, tc.want.LowerBound, tc.desc)
+		}
+		if !approxEqual(got.UpperBound, tc.want.UpperBound) {
+			t.Errorf("TestReturnConfidenceIntervalFloat64(%f, %d, %f, %f, %f)=%0.10f, want %0.10f, desc %s, UpperBound is not equal",
+				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
+				got.UpperBound, tc.want.LowerBound, tc.desc)
+		}
+	}
+}
+func TestReturnConfidenceIntervalInt64(t *testing.T) {
+	for _, tc := range []struct {
+		desc                                        string
+		noisedValue, l0Sensitivity, lInfSensitivity int64
+		epsilon, confidenceLevel                    float64
+		want                                        ConfidenceIntervalInt64
+	}{
+		{
+			desc:            "Random test",
+			noisedValue:     65,
+			l0Sensitivity:   7,
+			lInfSensitivity: 10,
+			epsilon:         0.1,
+			confidenceLevel: 0.2,
+			want:            ConfidenceIntervalInt64{-91, 221},
+		},
+		{
+			desc:            "Random test",
+			noisedValue:     5,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: 0.4,
+			want:            ConfidenceIntervalInt64{2, 8},
+		},
+	} {
+		got, err := lap.ReturnConfidenceIntervalInt64(tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity,
+			tc.epsilon, 0, tc.confidenceLevel)
+		if err != nil {
+			t.Errorf("ReturnConfidenceIntervalInt64: when %s for err got %v", tc.desc, err)
+		}
+		if got.LowerBound != tc.want.LowerBound {
+			t.Errorf("TestReturnConfidenceIntervalInt64(%d, %d, %d, %f, %f)=%d, want %d, desc %s, LowerBound is not equal",
+				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
+				got.UpperBound, tc.want.LowerBound, tc.desc)
+		}
+		if got.UpperBound != tc.want.UpperBound {
+			t.Errorf("TestReturnConfidenceIntervalInt64(%d, %d, %d, %f, %f)=%d, want %d, desc %s, UpperBound is not equal",
+				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
+				got.UpperBound, tc.want.LowerBound, tc.desc)
+		}
+	}
+}
+
+func TestChecksConfidenceInterval(t *testing.T) {
+	for _, tc := range []struct {
+		desc                                      string
+		noisedValue                               float64
+		l0Sensitivity                             int64
+		lInfSensitivity, epsilon, confidenceLevel float64
+		want                                      ConfidenceIntervalFloat64
+	}{
+		{
+			desc:            "Negative Distribution parameter for Laplace args checks",
+			noisedValue:     0,
+			l0Sensitivity:   7,
+			lInfSensitivity: -1,
+			epsilon:         0.1,
+			confidenceLevel: 0.2,
+		},
+		{
+			desc:            "Negative confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: -1,
+		},
+		{
+			desc:            "Greater than 1 confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: 2,
+		},
+	} {
+		_, err := lap.ReturnConfidenceIntervalInt64(int64(tc.noisedValue), tc.l0Sensitivity, int64(tc.lInfSensitivity),
+			tc.epsilon, 0, tc.confidenceLevel)
+		if err == nil {
+			t.Errorf("ReturnConfidenceIntervalInt64: didn't return an error, desc %s", tc.desc)
+		}
+		_, err = lap.ReturnConfidenceIntervalFloat64(tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity,
+			tc.epsilon, 0, tc.confidenceLevel)
+		if err == nil {
+			t.Errorf("ReturnConfidenceIntervalFloat64: didn't return an error, desc %s", tc.desc)
+		}
+	}
+}
 func TestGeometricStatistics(t *testing.T) {
 	const numberOfSamples = 125000
 	for _, tc := range []struct {

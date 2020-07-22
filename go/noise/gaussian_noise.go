@@ -113,6 +113,16 @@ func (gaussian) DeltaForThreshold(l0Sensitivity int64, lInfSensitivity, epsilon,
 	return 1 - math.Pow(noiseDist.CDF(threshold-lInfSensitivity), float64(l0Sensitivity))
 }
 
+func (gaussian) ReturnConfidenceIntervalFloat64(noisedValue float64, l0sensitivity int64, lInfSensitivity, epsilon, delta,
+	confidenceLevel float64) (*ConfidenceIntervalFloat64, error) {
+	return nil, nil
+}
+
+func (gaussian) ReturnConfidenceIntervalInt64(noisedValue, l0sensitivity, lInfSensitivity int64, epsilon, delta,
+	confidenceLevel float64) (*ConfidenceIntervalInt64, error) {
+	return nil, nil
+}
+
 func checkArgsGaussian(label string, l0Sensitivity int64, lInfSensitivity, epsilon, delta float64) error {
 	if err := checks.CheckL0Sensitivity(label, l0Sensitivity); err != nil {
 		return err

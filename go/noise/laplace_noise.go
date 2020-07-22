@@ -17,6 +17,7 @@
 package noise
 
 import (
+	"fmt"
 	"math"
 
 	log "github.com/golang/glog"
@@ -157,6 +158,44 @@ func (laplace) DeltaForThreshold(l0Sensitivity int64, lInfSensitivity, epsilon, 
 	return 1 - math.Pow(1-partitionDelta, float64(l0Sensitivity))
 }
 
+// ReturnConfidenceIntervalFloat64 returns a confidence interval for the float64 noised sample generated from Laplace distribution
+// where noisedValue is the noised sample, l0Sensitivity and lInfSensitivity are the senstivity paramters,
+// epsilon and delta are parameters defining laplace distribution and confidenceLevel is (1-alpha)%
+// and it has to be a value between 0 and 1.
+func (laplace) ReturnConfidenceIntervalFloat64(noisedValue float64, l0sensitivity int64, lInfSensitivity, epsilon, delta,
+	confidenceLevel float64) (*ConfidenceIntervalFloat64, error) {
+	if err := checkArgsConfidenceIntervalLaplace("ReturnConfidenceIntervaFloat64 (Laplace)", l0sensitivity, lInfSensitivity, epsilon,
+		delta, confidenceLevel); err != nil {
+		err = fmt.Errorf("ReturnConfidenceIntervaFloat64(noisedValue %f, l0sensitivity %d, lInfSensitivity %f, epsilon %f,"+
+			"delta %e, confidenceLevel %f) checks failed with %v",
+			noisedValue, l0sensitivity, lInfSensitivity, epsilon, delta, confidenceLevel, err)
+		return nil, err
+	}
+	// To be consistent with library, lambda is the parameter for Laplace distribution. (b in docs)
+	lambda := laplaceLambda(l0sensitivity, lInfSensitivity, epsilon)
+	return getConfidenceIntervalLaplace(noisedValue, lambda, confidenceLevel), nil
+}
+
+// ReturnConfidenceIntervalInt64 returns a confidence interval for the int64 noised sample generated from Laplace distribution
+// where noisedValue is the noised sample, l0Sensitivity and lInfSensitivity are the senstivity paramters,
+// epsilon and delta are parameters defining laplace distribution and confidenceLevel is (1-alpha)%
+// and it has to be a value between 0 and 1.
+func (laplace) ReturnConfidenceIntervalInt64(noisedValue, l0sensitivity, lInfSensitivity int64, epsilon, delta,
+	confidenceLevel float64) (*ConfidenceIntervalInt64, error) {
+	if err := checkArgsConfidenceIntervalLaplace("ReturnConfidenceIntervalInt64 (Laplace)", l0sensitivity, float64(lInfSensitivity), epsilon,
+		delta, confidenceLevel); err != nil {
+		err = fmt.Errorf("ReturnConfidenceIntervalInt64(noisedValue %d, l0sensitivity %d, lInfSensitivity %d, epsilon %f,"+
+			"delta %e, confidenceLevel %f) checks failed with %v",
+			noisedValue, l0sensitivity, lInfSensitivity, epsilon, delta, confidenceLevel, err)
+		return nil, err
+	}
+	// To be consistent with library, lambda is the parameter for Laplace distribution. (b in docs)
+	lambda := laplaceLambda(l0sensitivity, float64(lInfSensitivity), epsilon)
+	confInt := getConfidenceIntervalLaplace(float64(noisedValue), lambda, confidenceLevel)
+	// Rounding bounds to int64
+	return &ConfidenceIntervalInt64{int64(math.Round(confInt.LowerBound)), int64(math.Round(confInt.UpperBound))}, nil
+}
+
 func checkArgsLaplace(label string, l0Sensitivity int64, lInfSensitivity, epsilon, delta float64) error {
 	if err := checks.CheckL0Sensitivity(label, l0Sensitivity); err != nil {
 		return err
@@ -168,6 +207,14 @@ func checkArgsLaplace(label string, l0Sensitivity int64, lInfSensitivity, epsilo
 		return err
 	}
 	return checks.CheckNoDelta(label, delta)
+}
+
+// Checks arguments for Confidence interval for Laplace.
+func checkArgsConfidenceIntervalLaplace(label string, l0Sensitivity int64, lInfSensitivity, epsilon, delta, confidenceLevel float64) error {
+	if err := checks.CheckConfidenceLevel(label, confidenceLevel); err != nil {
+		return err
+	}
+	return checkArgsLaplace(label, l0Sensitivity, lInfSensitivity, epsilon, delta)
 }
 
 // addLaplace adds Laplace noise scaled to the given epsilon and l1Sensitivity to the
@@ -184,6 +231,33 @@ func addLaplace(x, epsilon, l1Sensitivity float64) float64 {
 func laplaceLambda(l0Sensitivity int64, lInfSensitivity, epsilon float64) float64 {
 	l1Sensitivity := lInfSensitivity * float64(l0Sensitivity)
 	return l1Sensitivity / epsilon
+}
+
+// getConfidenceIntervalLaplace returns confidence interval of laplace with parameter lambda
+func getConfidenceIntervalLaplace(noisedValue float64, lambda, confidenceLevel float64) *ConfidenceIntervalFloat64 {
+	// Finding a symmetrical confidence interval around a Laplace of (0, lambda)
+	// by computing alpha,
+	alpha := (1 - confidenceLevel)
+	// then calculating z_(1 - alpha/2) using InverseCDFLaplace
+	// and the confidence interval will be noisedValue +/- z_(1-alpha/2).
+	k := 1 - alpha/2
+	zk := inverseCDFLaplace(0, lambda, k)
+	return &ConfidenceIntervalFloat64{noisedValue - zk, noisedValue + zk}
+}
+
+// inverseCDFLaplace returns z_p where if is Y a random variable then z_p is the value that satisfies this equation:
+// Pr( Y <= z_p ) = p
+// mean and lambda are laplace distribution parameters and p is the probablity.
+func inverseCDFLaplace(mean, lambda, p float64) float64 {
+	return (mean - lambda*sign(p-0.5)*math.Log(1-2*math.Abs(p-0.5)))
+}
+
+// sign function helper method.
+func sign(x float64) float64 {
+	if x >= 0 {
+		return 1
+	}
+	return -1
 }
 
 // geometric draws a sample drawn from a geometric distribution with parameter
