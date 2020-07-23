@@ -26,8 +26,8 @@ import (
 
 // CheckEpsilonVeryStrict returns an error if ε is +∞ or less than 2⁻⁵⁰.
 func CheckEpsilonVeryStrict(label string, epsilon float64) error {
-	if epsilon < math.Exp2(-50.0) || math.IsInf(epsilon, 0) {
-		return fmt.Errorf("%s: Epsilon is %f, should be at least 2^-50 (and cannot be infinity)", label, epsilon)
+	if epsilon < math.Exp2(-50.0) || math.IsInf(epsilon, 0) || math.IsNaN(epsilon) {
+		return fmt.Errorf("%s: Epsilon is %f, should be at least 2^-50 (and cannot be infinity or NaN)", label, epsilon)
 	}
 	return nil
 }
@@ -182,8 +182,8 @@ func CheckMaxPartitionsContributed(label string, maxPartitionsContributed int64)
 
 // CheckConfidenceLevel returns an error if confidenceLevel isn't between 0 and 1
 func CheckConfidenceLevel(label string, confidenceLevel float64) error {
-	if confidenceLevel < 0 || confidenceLevel > 1 {
-		return fmt.Errorf("%s: confidenceLevel is %f, should be between 0 and 1", label, confidenceLevel)
+	if confidenceLevel < 0 || confidenceLevel > 1 || math.IsNaN(confidenceLevel) {
+		return fmt.Errorf("%s: confidenceLevel is %f, should be between 0 and 1 (cannot be NaN)", label, confidenceLevel)
 	}
 	return nil
 }

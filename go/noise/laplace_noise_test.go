@@ -339,11 +339,12 @@ func TestConfidenceIntervalLaplace(t *testing.T) {
 
 func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 	for _, tc := range []struct {
-		desc                                      string
-		noisedValue                               float64
-		l0Sensitivity                             int64
-		lInfSensitivity, epsilon, confidenceLevel float64
-		want                                      ConfidenceIntervalFloat64
+		desc                                             string
+		noisedValue                                      float64
+		l0Sensitivity                                    int64
+		lInfSensitivity, epsilon, confidenceLevel, delta float64
+		want                                             ConfidenceIntervalFloat64
+		wantErr                                          bool
 	}{
 		{
 			desc:            "Random test",
@@ -353,12 +354,118 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			epsilon:         0.1,
 			confidenceLevel: 0.76,
 			want:            ConfidenceIntervalFloat64{-2.503481338, 168.7504813},
+			wantErr:         false,
+		},
+		// Argument checking
+		{
+			desc:            "Negative l0Sensitivity",
+			noisedValue:     0,
+			l0Sensitivity:   -1,
+			lInfSensitivity: 1,
+			epsilon:         0.1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Negative lInfSensitivity",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: -1,
+			epsilon:         0.1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Infinte lInfSensitivity",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: math.Inf(1),
+			epsilon:         0.1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "NaN lInfSensitivity",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: math.NaN(),
+			epsilon:         0.1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Infinite epsilon",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         math.Inf(1),
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Epsilon less than 2⁻⁵⁰",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         math.Exp(-51),
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "NaN epsilon",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         math.NaN(),
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Non-zero delta",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         0.1,
+			delta:           1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Negative confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: -1,
+			wantErr:         true,
+		},
+		{
+			desc:            "Greater than 1 confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: 2,
+			wantErr:         true,
+		},
+		{
+			desc:            "NaN confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: math.NaN(),
+			wantErr:         true,
 		},
 	} {
 		got, err := lap.ReturnConfidenceIntervalFloat64(tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity,
-			tc.epsilon, 0, tc.confidenceLevel)
+			tc.epsilon, tc.delta, tc.confidenceLevel)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("ReturnConfidenceIntervalFloat64: when %v for err got %v, want %t", tc.desc, err, tc.wantErr)
+			continue
+		}
 		if err != nil {
-			t.Errorf("ReturnConfidenceIntervalFloat64: when %s for err got %v", tc.desc, err)
+			continue
 		}
 		if !approxEqual(got.LowerBound, tc.want.LowerBound) {
 			t.Errorf("TestReturnConfidenceIntervalFloat64(%f, %d, %f, %f, %f)=%0.10f, want %0.10f, desc %s, LowerBound is not equal",
@@ -376,8 +483,9 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 	for _, tc := range []struct {
 		desc                                        string
 		noisedValue, l0Sensitivity, lInfSensitivity int64
-		epsilon, confidenceLevel                    float64
+		epsilon, delta, confidenceLevel             float64
 		want                                        ConfidenceIntervalInt64
+		wantErr                                     bool
 	}{
 		{
 			desc:            "Random test",
@@ -387,6 +495,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			epsilon:         0.1,
 			confidenceLevel: 0.2,
 			want:            ConfidenceIntervalInt64{-91, 221},
+			wantErr:         false,
 		},
 		{
 			desc:            "Random test",
@@ -396,12 +505,100 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			epsilon:         0.3,
 			confidenceLevel: 0.4,
 			want:            ConfidenceIntervalInt64{2, 8},
+			wantErr:         false,
+		},
+		// Argument checking
+		{
+			desc:            "Negative l0Sensitivity",
+			noisedValue:     0,
+			l0Sensitivity:   -1,
+			lInfSensitivity: 1,
+			epsilon:         0.1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Negative lInfSensitivity",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: -1,
+			epsilon:         0.1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Infinite epsilon",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         math.Inf(1),
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Epsilon less than 2⁻⁵⁰",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         math.Exp(-51),
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "NaN epsilon",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         math.NaN(),
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Non-zero delta",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 1,
+			epsilon:         0.1,
+			delta:           1,
+			confidenceLevel: 0.5,
+			wantErr:         true,
+		},
+		{
+			desc:            "Negative confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: -1,
+			wantErr:         true,
+		},
+		{
+			desc:            "Greater than 1 confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: 2,
+			wantErr:         true,
+		},
+		{
+			desc:            "NaN confidence level",
+			noisedValue:     0,
+			l0Sensitivity:   1,
+			lInfSensitivity: 2,
+			epsilon:         0.3,
+			confidenceLevel: math.NaN(),
+			wantErr:         true,
 		},
 	} {
 		got, err := lap.ReturnConfidenceIntervalInt64(tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity,
-			tc.epsilon, 0, tc.confidenceLevel)
+			tc.epsilon, tc.delta, tc.confidenceLevel)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("ReturnConfidenceIntervalInt64: when %v for err got %v, want %t", tc.desc, err, tc.wantErr)
+			continue
+		}
 		if err != nil {
-			t.Errorf("ReturnConfidenceIntervalInt64: when %s for err got %v", tc.desc, err)
+			continue
 		}
 		if got.LowerBound != tc.want.LowerBound {
 			t.Errorf("TestReturnConfidenceIntervalInt64(%d, %d, %d, %f, %f)=%d, want %d, desc %s, LowerBound is not equal",
@@ -416,51 +613,6 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 	}
 }
 
-func TestChecksConfidenceInterval(t *testing.T) {
-	for _, tc := range []struct {
-		desc                                      string
-		noisedValue                               float64
-		l0Sensitivity                             int64
-		lInfSensitivity, epsilon, confidenceLevel float64
-		want                                      ConfidenceIntervalFloat64
-	}{
-		{
-			desc:            "Negative Distribution parameter for Laplace args checks",
-			noisedValue:     0,
-			l0Sensitivity:   7,
-			lInfSensitivity: -1,
-			epsilon:         0.1,
-			confidenceLevel: 0.2,
-		},
-		{
-			desc:            "Negative confidence level",
-			noisedValue:     0,
-			l0Sensitivity:   1,
-			lInfSensitivity: 2,
-			epsilon:         0.3,
-			confidenceLevel: -1,
-		},
-		{
-			desc:            "Greater than 1 confidence level",
-			noisedValue:     0,
-			l0Sensitivity:   1,
-			lInfSensitivity: 2,
-			epsilon:         0.3,
-			confidenceLevel: 2,
-		},
-	} {
-		_, err := lap.ReturnConfidenceIntervalInt64(int64(tc.noisedValue), tc.l0Sensitivity, int64(tc.lInfSensitivity),
-			tc.epsilon, 0, tc.confidenceLevel)
-		if err == nil {
-			t.Errorf("ReturnConfidenceIntervalInt64: didn't return an error, desc %s", tc.desc)
-		}
-		_, err = lap.ReturnConfidenceIntervalFloat64(tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity,
-			tc.epsilon, 0, tc.confidenceLevel)
-		if err == nil {
-			t.Errorf("ReturnConfidenceIntervalFloat64: didn't return an error, desc %s", tc.desc)
-		}
-	}
-}
 func TestGeometricStatistics(t *testing.T) {
 	const numberOfSamples = 125000
 	for _, tc := range []struct {
