@@ -114,13 +114,13 @@ func (gaussian) DeltaForThreshold(l0Sensitivity int64, lInfSensitivity, epsilon,
 }
 
 func (gaussian) ReturnConfidenceIntervalFloat64(noisedValue float64, l0sensitivity int64, lInfSensitivity, epsilon, delta,
-	confidenceLevel float64) (*ConfidenceIntervalFloat64, error) {
-	return nil, nil
+	confidenceLevel float64) (ConfidenceIntervalFloat64, error) {
+	return ConfidenceIntervalFloat64{}, nil
 }
 
 func (gaussian) ReturnConfidenceIntervalInt64(noisedValue, l0sensitivity, lInfSensitivity int64, epsilon, delta,
-	confidenceLevel float64) (*ConfidenceIntervalInt64, error) {
-	return nil, nil
+	confidenceLevel float64) (ConfidenceIntervalInt64, error) {
+	return ConfidenceIntervalInt64{}, nil
 }
 
 func checkArgsGaussian(label string, l0Sensitivity int64, lInfSensitivity, epsilon, delta float64) error {

@@ -114,10 +114,10 @@ type Noise interface {
 	// ReturnConfidenceIntervalFloat64 returns a confidence interval for the true value using float64 noisedValue argument
 	// with confidence level supplied given L_0 and L_∞ sensitivities, epsilon and delta parameters for the distribution
 	ReturnConfidenceIntervalFloat64(noisedValue float64, l0sensitivity int64, lInfSensitivity, epsilon, delta,
-		confidenceLevel float64) (*ConfidenceIntervalFloat64, error)
+		confidenceLevel float64) (ConfidenceIntervalFloat64, error)
 
 	// ReturnConfidenceIntervalInt64 returns a confidence interval for the true value using int64 noisedValue argument
 	// with confidence level supplied given L_0 and L_∞ sensitivities, epsilon and delta parameters for the distribution
 	ReturnConfidenceIntervalInt64(noisedValue, l0sensitivity, lInfSensitivity int64, epsilon, delta,
-		confidenceLevel float64) (*ConfidenceIntervalInt64, error)
+		confidenceLevel float64) (ConfidenceIntervalInt64, error)
 }

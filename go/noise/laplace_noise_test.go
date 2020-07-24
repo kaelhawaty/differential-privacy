@@ -364,6 +364,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         0.1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -373,6 +374,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: -1,
 			epsilon:         0.1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -382,6 +384,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: math.Inf(1),
 			epsilon:         0.1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -391,6 +394,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: math.NaN(),
 			epsilon:         0.1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -400,6 +404,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         math.Inf(1),
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -409,6 +414,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         math.Exp(-51),
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -418,6 +424,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         math.NaN(),
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -428,6 +435,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			epsilon:         0.1,
 			delta:           1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -437,6 +445,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 2,
 			epsilon:         0.3,
 			confidenceLevel: -1,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -446,6 +455,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 2,
 			epsilon:         0.3,
 			confidenceLevel: 2,
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 		{
@@ -455,6 +465,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 2,
 			epsilon:         0.3,
 			confidenceLevel: math.NaN(),
+			want:            ConfidenceIntervalFloat64{},
 			wantErr:         true,
 		},
 	} {
@@ -464,18 +475,15 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			t.Errorf("ReturnConfidenceIntervalFloat64: when %v for err got %v, want %t", tc.desc, err, tc.wantErr)
 			continue
 		}
-		if err != nil {
-			continue
-		}
 		if !approxEqual(got.LowerBound, tc.want.LowerBound) {
 			t.Errorf("TestReturnConfidenceIntervalFloat64(%f, %d, %f, %f, %f)=%0.10f, want %0.10f, desc %s, LowerBound is not equal",
 				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
-				got.UpperBound, tc.want.LowerBound, tc.desc)
+				got.LowerBound, tc.want.LowerBound, tc.desc)
 		}
 		if !approxEqual(got.UpperBound, tc.want.UpperBound) {
 			t.Errorf("TestReturnConfidenceIntervalFloat64(%f, %d, %f, %f, %f)=%0.10f, want %0.10f, desc %s, UpperBound is not equal",
 				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
-				got.UpperBound, tc.want.LowerBound, tc.desc)
+				got.UpperBound, tc.want.UpperBound, tc.desc)
 		}
 	}
 }
@@ -515,6 +523,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         0.1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -524,6 +533,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: -1,
 			epsilon:         0.1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -533,6 +543,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         math.Inf(1),
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -542,6 +553,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         math.Exp(-51),
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -551,6 +563,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 1,
 			epsilon:         math.NaN(),
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -561,6 +574,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			epsilon:         0.1,
 			delta:           1,
 			confidenceLevel: 0.5,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -570,6 +584,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 2,
 			epsilon:         0.3,
 			confidenceLevel: -1,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -579,6 +594,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 2,
 			epsilon:         0.3,
 			confidenceLevel: 2,
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 		{
@@ -588,6 +604,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 2,
 			epsilon:         0.3,
 			confidenceLevel: math.NaN(),
+			want:            ConfidenceIntervalInt64{},
 			wantErr:         true,
 		},
 	} {
@@ -597,18 +614,15 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			t.Errorf("ReturnConfidenceIntervalInt64: when %v for err got %v, want %t", tc.desc, err, tc.wantErr)
 			continue
 		}
-		if err != nil {
-			continue
-		}
 		if got.LowerBound != tc.want.LowerBound {
 			t.Errorf("TestReturnConfidenceIntervalInt64(%d, %d, %d, %f, %f)=%d, want %d, desc %s, LowerBound is not equal",
 				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
-				got.UpperBound, tc.want.LowerBound, tc.desc)
+				got.LowerBound, tc.want.LowerBound, tc.desc)
 		}
 		if got.UpperBound != tc.want.UpperBound {
 			t.Errorf("TestReturnConfidenceIntervalInt64(%d, %d, %d, %f, %f)=%d, want %d, desc %s, UpperBound is not equal",
 				tc.noisedValue, tc.l0Sensitivity, tc.lInfSensitivity, tc.epsilon, tc.confidenceLevel,
-				got.UpperBound, tc.want.LowerBound, tc.desc)
+				got.UpperBound, tc.want.UpperBound, tc.desc)
 		}
 	}
 }
