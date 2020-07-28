@@ -1,3 +1,5 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
 #
 # Copyright 2020 Google LLC
 #
@@ -18,3 +20,17 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/google/differential-privacy/go
 gazelle(name = "gazelle")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/google/differential-privacy/go",
+    visibility = ["//visibility:private"],
+    deps = ["//noise:go_default_library"],
+)
+
+go_binary(
+    name = "go",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
