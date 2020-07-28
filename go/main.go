@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/google/differential-privacy/go/noise"
 )
@@ -11,7 +12,7 @@ func main() {
 	trueMean := trueSum / trueCount
 	lap := noise.Laplace()
 	// Senstivity parameters
-	l0Sensitivity, lInfSensitivity, epsilon := int64(1), float64(1), float64(0.1)
+	l0Sensitivity, lInfSensitivity, epsilon := int64(1), float64(1), float64(100)
 	// Increments for confidence interval
 	incrment := 0.01
 	valuesCount, value := int(1/incrment), 0.0
@@ -31,9 +32,20 @@ func main() {
 			// Getting confidence intervals for noised values
 			confIntSum, _ := lap.ReturnConfidenceIntervalFloat64(noisedSum, l0Sensitivity, lInfSensitivity, epsilon, 0, confLevel)
 			confIntCount, _ := lap.ReturnConfidenceIntervalFloat64(noisedCount, l0Sensitivity, lInfSensitivity, epsilon, 0, confLevel)
-
+			confIntCount.LowerBound, confIntCount.UpperBound = math.Max(0, confIntCount.LowerBound), math.Max(0, confIntCount.UpperBound)
 			// Computing confidence interval for mean
-			confIntMean := noise.ConfidenceIntervalFloat64{LowerBound: confIntSum.LowerBound / confIntCount.UpperBound, UpperBound: confIntSum.UpperBound / confIntCount.LowerBound}
+			var estLowerBound, estUpperBound float64
+			if confIntSum.LowerBound >= 0 {
+				estLowerBound = confIntSum.LowerBound / confIntCount.UpperBound
+			} else {
+				estLowerBound = confIntSum.LowerBound / confIntCount.LowerBound
+			}
+			if confIntSum.UpperBound >= 0 {
+				estUpperBound = confIntSum.UpperBound / confIntCount.LowerBound
+			} else {
+				estUpperBound = confIntSum.UpperBound / confIntCount.UpperBound
+			}
+			confIntMean := noise.ConfidenceIntervalFloat64{LowerBound: estLowerBound, UpperBound: estUpperBound}
 			if confIntMean.LowerBound <= trueMean && trueMean <= confIntMean.UpperBound {
 				cntInsideInterval++
 			}
