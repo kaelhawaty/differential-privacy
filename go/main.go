@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	trueSum, trueCount := 10000000.0, 50
+	trueSum, trueCount := 10000.0, 10000000
 	trueMean := trueSum / float64(trueCount)
 	lap := noise.Laplace()
 	// Senstivity parameters
@@ -20,7 +20,6 @@ func main() {
 	for i := 0; i < valuesCount; i++ {
 		confLevels[i], value = value, value+incrment
 	}
-	prev := int64(0)
 	// Estimated Output for difference confidence levels
 	estConfLevels := make([]float64, valuesCount, valuesCount)
 	numSamples := 10000
@@ -48,10 +47,6 @@ func main() {
 			confIntMean := noise.ConfidenceIntervalFloat64{LowerBound: estLowerBound, UpperBound: estUpperBound}
 			if confIntMean.LowerBound <= trueMean && trueMean <= confIntMean.UpperBound {
 				cntInsideInterval++
-			}
-			if prev < (confIntCount.UpperBound - confIntCount.LowerBound) {
-				prev = confIntCount.UpperBound - confIntCount.LowerBound
-				fmt.Println(i)
 			}
 		}
 		estConfLevels[i] = float64(cntInsideInterval) / float64(numSamples)
