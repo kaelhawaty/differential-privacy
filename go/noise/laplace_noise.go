@@ -192,8 +192,19 @@ func (laplace) ReturnConfidenceIntervalInt64(noisedValue, l0sensitivity, lInfSen
 	// To be consistent with library, lambda is the parameter for Laplace distribution. (b in docs)
 	lambda := laplaceLambda(l0sensitivity, float64(lInfSensitivity), epsilon)
 	confInt := getConfidenceIntervalLaplace(float64(noisedValue), lambda, confidenceLevel)
+	var lower, upper int64
+	if confInt.UpperBound > math.MaxInt64 {
+		upper = math.MaxInt64
+	} else {
+		upper = int64(math.Round(confInt.UpperBound))
+	}
+	if confInt.LowerBound < math.MinInt64 {
+		lower = math.MinInt64
+	} else {
+		lower = int64(math.Round(confInt.LowerBound))
+	}
 	// Rounding bounds to int64
-	return ConfidenceIntervalInt64{int64(math.Round(confInt.LowerBound)), int64(math.Round(confInt.UpperBound))}, nil
+	return ConfidenceIntervalInt64{lower, upper}, nil
 }
 
 func checkArgsLaplace(label string, l0Sensitivity int64, lInfSensitivity, epsilon, delta float64) error {
