@@ -8,7 +8,7 @@ import (
 )
 
 // Senstivity parameters
-var l0Sensitivity, lInfSensitivity, epsilon = int64(1), float64(1), float64(1)
+var l0Sensitivity, lInfSensitivity, epsilon = int64(1), float64(1), float64(0.6)
 var lap = noise.Laplace()
 
 func getConfIntMean(noisedSum float64, noisedCount int64, confLevelSum, confLevelCount float64) noise.ConfidenceIntervalFloat64 {
@@ -31,7 +31,7 @@ func getConfIntMean(noisedSum float64, noisedCount int64, confLevelSum, confLeve
 	return confIntMean
 }
 func main() {
-	trueSum, trueCount := 100.0, 1
+	trueSum, trueCount := 100.0, 20
 	trueMean := trueSum / float64(trueCount)
 
 	// Increments for confidence interval
@@ -43,19 +43,21 @@ func main() {
 	}
 	// Estimated Output for difference confidence levels
 	estConfLevels := make([]float64, valuesCount, valuesCount)
-	numSamples := 1000
-	//splits := float64(1000.0)
+	numSamples := 10000
+	splits := float64(100.0)
 	for i, confLevel := range confLevels {
 		cntInsideInterval := 0
 		for j := 0; j < numSamples; j++ {
 			// Getting noised values
 			noisedSum, noisedCount := lap.AddNoiseFloat64(trueSum, l0Sensitivity, lInfSensitivity, epsilon, 0), lap.AddNoiseInt64(int64(trueCount), l0Sensitivity, int64(lInfSensitivity), epsilon, 0)
 			// Getting confidence intervals for noised values
-			bestConfIntMean := getConfIntMean(noisedSum, noisedCount, math.Sqrt(confLevel), math.Sqrt(confLevel))
-			/*ratioInc := (1/confLevel - confLevel) / splits
+			// Ratio of 1 approximation
+			//bestConfIntMean := getConfIntMean(noisedSum, noisedCount, math.Sqrt(confLevel), math.Sqrt(confLevel))
+			// Bruteforce optimization
+			ratioInc := (1/confLevel - confLevel) / splits
 			var bestConfIntMean noise.ConfidenceIntervalFloat64
 			bestTightness := math.MaxFloat64
-			for i := 0; i < 1000; i++ {
+			for i := 0; i < int(splits); i++ {
 				curRatio := confLevel + ratioInc*float64(i)
 				a := math.Sqrt(confLevel / curRatio)
 				curConfInt := getConfIntMean(noisedSum, noisedCount, curRatio*a, a)
@@ -64,7 +66,7 @@ func main() {
 					bestConfIntMean = curConfInt
 					bestTightness = tightness
 				}
-			}*/
+			}
 			if bestConfIntMean.LowerBound <= trueMean && trueMean <= bestConfIntMean.UpperBound {
 				cntInsideInterval++
 			}
