@@ -61,7 +61,7 @@ public class BoundedSum {
   private double noisedSum;
 
   // Was the sum returned to the user?
-  private boolean resultReturned;
+  public boolean resultReturned;
 
   private BoundedSum(Params params) {
     sum = 0.0;

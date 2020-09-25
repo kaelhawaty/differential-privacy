@@ -51,3 +51,10 @@ java_library(
         "@maven//:org_apache_commons_commons_math3",
     ],
 )
+
+java_binary(
+    name = "main",
+    srcs = glob(["main.java"]),
+    main_class = "com.google.privacy.differentialprivacy.main",
+    deps = ["differentialprivacy"],
+)

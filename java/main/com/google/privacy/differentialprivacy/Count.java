@@ -59,7 +59,7 @@ public class Count {
   private long noisedCount;
 
   // Was the count returned to the user?
-  private boolean resultReturned;
+  public boolean resultReturned;
 
   private Count(Params params) {
     this.params = params;
