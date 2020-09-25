@@ -46,6 +46,7 @@ java_test(
     deps = [
         ":autovalue",
         "//main/com/google/privacy/differentialprivacy",
+        "//main/com/google/privacy/differentialprivacy/testing:confidenceinterval_utils",
         "@com_google_differential_privacy//proto:summary_java_proto",
         "@maven//:com_google_auto_value_auto_value",
         "@maven//:com_google_auto_value_auto_value_annotations",

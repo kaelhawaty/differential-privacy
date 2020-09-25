@@ -42,3 +42,13 @@ java_library(
         "@maven//:org_apache_commons_commons_math3",
     ],
 )
+
+java_library(
+    name = "confidenceinterval_utils",
+    testonly = 1,
+    srcs = ["ConfidenceIntervalUtil.java"],
+    deps = [
+        "//main/com/google/privacy/differentialprivacy",
+        "@maven//:com_google_truth_truth",
+    ],
+)

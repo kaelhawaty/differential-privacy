@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static java.lang.Math.max;
 import static org.junit.Assert.assertThrows;
 
+import com.google.privacy.differentialprivacy.testing.ConfidenceIntervalUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -744,5 +745,58 @@ public class LaplaceNoiseConfidenceIntervalTest {
             actual.upperBound(), expected.upperBound())
         .that(actual.upperBound())
         .isEqualTo(expected.upperBound());
+  }
+
+  private ConfidenceIntervalUtil.ConfidenceIntervalGenerator getConfidenceIntervalGenerator(
+      double trueValue, int l0Sensitivity, double lInfSensitivity, double epsilon, double alpha) {
+    return new ConfidenceIntervalUtil.ConfidenceIntervalGenerator() {
+      @Override
+      public double getAlpha() {
+        return alpha;
+      }
+
+      @Override
+      public double getTrueValue() {
+        return trueValue;
+      }
+
+      public ConfidenceInterval computeConfidenceInterval() {
+        double noisedX = NOISE.addNoise(trueValue, l0Sensitivity, lInfSensitivity, epsilon, null);
+        return NOISE.computeConfidenceInterval(
+            noisedX, l0Sensitivity, lInfSensitivity, epsilon, null, alpha);
+      }
+    };
+  }
+
+  private ConfidenceIntervalUtil.ConfidenceIntervalGenerator getConfidenceIntervalGenerator(
+      long trueValue, int l0Sensitivity, long lInfSensitivity, double epsilon, double alpha) {
+    return new ConfidenceIntervalUtil.ConfidenceIntervalGenerator() {
+      @Override
+      public double getAlpha() {
+        return alpha;
+      }
+
+      @Override
+      public double getTrueValue() {
+        return trueValue;
+      }
+
+      public ConfidenceInterval computeConfidenceInterval() {
+        double noisedX = NOISE.addNoise(trueValue, l0Sensitivity, lInfSensitivity, epsilon, null);
+        return NOISE.computeConfidenceInterval(
+            noisedX, l0Sensitivity, lInfSensitivity, epsilon, null, alpha);
+      }
+    };
+  }
+
+  @Test
+  public void computeConfidenceInterval_forDouble_defaultParameters_returnsExactConfidenceLevel() {
+    ConfidenceIntervalUtil.runTwoSidedTest(
+        getConfidenceIntervalGenerator(
+            0.0,
+            DEFAULT_L_0_SENSITIVITY,
+            DEFAULT_L_INF_SENSITIVITY,
+            DEFAULT_EPSILON,
+            DEFAULT_ALPHA));
   }
 }

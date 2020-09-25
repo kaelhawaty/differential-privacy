@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.math.Stats;
 import com.google.differentialprivacy.SummaryOuterClass.CountSummary;
+import com.google.privacy.differentialprivacy.testing.ConfidenceIntervalUtil;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Collection;
 import org.junit.Before;
@@ -699,5 +700,34 @@ public class CountTest {
             eq(EPSILON),
             eq(DELTA),
             eq(ALPHA));
+  }
+
+  private ConfidenceIntervalUtil.ConfidenceIntervalGenerator getConfidenceIntervalGenerator(
+      Count.Params.Builder countBuilder, long trueValue, double alpha) {
+    return new ConfidenceIntervalUtil.ConfidenceIntervalGenerator() {
+      @Override
+      public double getAlpha() {
+        return alpha;
+      }
+
+      @Override
+      public double getTrueValue() {
+        return trueValue;
+      }
+
+      public ConfidenceInterval computeConfidenceInterval() {
+        Count count = countBuilder.build();
+        count.incrementBy(trueValue);
+        count.computeResult();
+        return count.computeConfidenceInterval(alpha);
+      }
+    };
+  }
+
+  @Test
+  public void computeConfidenceInterval_defaultParameters_returnsGreaterThanOrEqual() {
+    ConfidenceIntervalUtil.runOneSidedTest(
+        getConfidenceIntervalGenerator(
+            Count.builder().epsilon(EPSILON).delta(null).maxPartitionsContributed(1), 100, ALPHA));
   }
 }

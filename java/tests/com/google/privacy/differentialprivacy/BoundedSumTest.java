@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.math.Stats;
 import com.google.differentialprivacy.SummaryOuterClass.BoundedSumSummary;
+import com.google.privacy.differentialprivacy.testing.ConfidenceIntervalUtil;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Arrays;
 import org.junit.Before;
@@ -886,5 +887,36 @@ public class BoundedSumTest {
   private static boolean approxEqual(double a, double b) {
     double maxMagnitude = max(Math.abs(a), Math.abs(b));
     return Math.abs(a - b) <= TOLERANCE * maxMagnitude;
+  }
+
+  private ConfidenceIntervalUtil.ConfidenceIntervalGenerator getConfidenceIntervalGenerator(
+          BoundedSum.Params.Builder sumBuilder, long trueValue, double alpha) {
+    return new ConfidenceIntervalUtil.ConfidenceIntervalGenerator() {
+      @Override
+      public double getAlpha() {
+        return alpha;
+      }
+
+      @Override
+      public double getTrueValue() {
+        return trueValue;
+      }
+
+      public ConfidenceInterval computeConfidenceInterval() {
+        BoundedSum sum = sumBuilder.build();
+        sum.addEntry(trueValue);
+        sum.computeResult();
+        return sum.computeConfidenceInterval(alpha);
+      }
+    };
+  }
+
+  @Test
+  public void computeConfidenceInterval_defaultParameters_returnsExactConfidenceLevel() {
+    ConfidenceIntervalUtil.runTwoSidedTest(
+        getConfidenceIntervalGenerator(
+            BoundedSum.builder().epsilon(EPSILON).delta(null).maxPartitionsContributed(1).lower(0).upper(100),
+            100,
+            ALPHA));
   }
 }
