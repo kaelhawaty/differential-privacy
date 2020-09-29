@@ -56,7 +56,7 @@ public class main {
     File file = new File("/home/" + System.getProperty("user.name") + "/output.txt");
     file.createNewFile();
     PrintStream out = new PrintStream(
-            new FileOutputStream(file, true), true);
+            new FileOutputStream(file, false), true);
     out.println();
     int numSamples = 10000000;
     double trueMean = 100.0; // Arbitrary value but should be reasonably high to see the small changes in count.
@@ -64,21 +64,25 @@ public class main {
 
     double[] epsilons = getEpsilons(0.1);
     double[] variance = new double[epsilons.length];
+    double[] sampleMeanArr = new double[epsilons.length];
 
     for (int i = 0; i < epsilons.length; i++) {
         System.out.println("Progress: BoundedMean " + i);
         BoundedMean mean = getBoundedMean(trueMean, cnt, epsilons[i]);
-        double sumOfSquares = 0.0;
+        double sampleMean = 0.0;
+        double meanOfSumOfSquares = 0.0;
         for (int j = 0; j < numSamples; j++) {
           mean.reset();
           double noisedValue = mean.computeResult();
-          sumOfSquares += (noisedValue - trueMean) * (noisedValue - trueMean);
+          meanOfSumOfSquares += noisedValue*noisedValue/numSamples;
+          sampleMean += noisedValue/numSamples;
         }
-        variance[i] = sumOfSquares / numSamples;
+        sampleMeanArr[i] = sampleMean;
+        variance[i] = meanOfSumOfSquares - sampleMean*sampleMean;
     }
 
     for (int i = 0; i < epsilons.length; i++) {
-      out.printf("%f\n", variance[i]);
+      out.printf("%f, %f\n", sampleMeanArr[i], variance[i]);
     }
 
     out.println("=======================================");
@@ -86,17 +90,20 @@ public class main {
     for (int i = 0; i < epsilons.length; i++) {
       System.out.println("Progress: BoundedMeanCountFloat " + i);
       BoundedMeanCountFloat mean = getBoundedMeanCountFloat(trueMean, cnt, epsilons[i]);
-      double sumOfSquares = 0.0;
+      double sampleMean = 0.0;
+      double meanOfSumOfSquares = 0.0;
       for (int j = 0; j < numSamples; j++) {
         mean.reset();
         double noisedValue = mean.computeResult();
-        sumOfSquares += (noisedValue - trueMean) * (noisedValue - trueMean);
+        meanOfSumOfSquares += noisedValue*noisedValue/numSamples;
+        sampleMean += noisedValue/numSamples;
       }
-      variance[i] = sumOfSquares / numSamples;
+      sampleMeanArr[i] = sampleMean;
+      variance[i] = meanOfSumOfSquares - sampleMean*sampleMean;
     }
 
     for (int i = 0; i < epsilons.length; i++) {
-      out.printf("%f\n", variance[i]);
+      out.printf("%f, %f\n", sampleMeanArr[i], variance[i]);
     }
   }
 }
